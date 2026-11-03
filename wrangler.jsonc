@@ -2,9 +2,11 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cnn-turk-browser-test",
   "main": "src/index.js",
-  "compatibility_date": "2026-11-03",
-  "compatibility_flags": ["nodejs_compat"],
-  "browser": { "binding": "MYBROWSER" },
-  "kv_namespaces": [ { "binding": "STREAMS_KV" } ],
-  "triggers": { "crons": [ "11 * * * *" ] }
+  "compatibility_date": "2026-10-15",
+  "kv_namespaces": [
+    {
+      "binding": "STREAMS_KV",
+      "id": "ed5b2bd662f046edb0b81c47d32ade97"
+    }
+  ]
 }
