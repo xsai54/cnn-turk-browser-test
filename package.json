@@ -1,13 +1,8 @@
 {
-  "name": "cnn-turk-browser-ondemand-test",
+  "name": "cnn-turk-github-refresh",
+  "version": "3.0.0",
   "private": true,
-  "version": "0.1.0",
   "type": "module",
-  "scripts": {
-    "deploy": "wrangler deploy"
-  },
-  "devDependencies": {
-    "@cloudflare/puppeteer": "^1.1.0",
-    "wrangler": "^4.68.0"
-  }
+  "scripts": { "deploy": "wrangler deploy" },
+  "devDependencies": { "wrangler": "^4.68.0" }
 }
