@@ -1,0 +1,13 @@
+{
+  "name": "cnn-turk-browser-ondemand-test",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/puppeteer": "^1.1.0",
+    "wrangler": "^4.68.0"
+  }
+}
