@@ -18,7 +18,7 @@ from playwright.sync_api import sync_playwright
 SOURCE = 'https://www.cnnturk.com/canli-yayin'
 WORKER_URL = os.environ.get('WORKER_URL', '').rstrip('/')
 TOKEN = os.environ.get('SYNC_TOKEN', '')
-TARGET_TRACK = 'track_3_754'  # Nur im Original beobachtete oder in der Master-Playlist angebotene Variante
+TARGET_TRACK = 'track_3_720'  # Nur im Original beobachtete oder in der Master-Playlist angebotene Variante
 
 
 def is_allowed(url, now=None):
@@ -218,7 +218,7 @@ def main():
             break
     send(usable)
     if not usable:
-        sys.exit('Die Qualitaet track_3_754 wurde nicht gefunden oder extern mit 403 abgelehnt. Kein neuer Link veroeffentlicht.')
+        sys.exit('Die Qualitaet track_3_720 wurde nicht gefunden oder extern mit 403 abgelehnt. Kein neuer Link veroeffentlicht.')
     print('CNN Turk HLS: Adresse uebertragen (keine Fernseh-Wiedergabegarantie).')
 
 
