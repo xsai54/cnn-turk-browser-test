@@ -1,3 +1,99 @@
+"""CNN Türk: offizielle Browser-Wiedergabe beobachten und URL unabhaengig pruefen.
+
+Keine Umgehung von Zugriffsschutz, kein Videoproxy. Nur Links, die sich ohne
+Browser-Cookies und ohne spezielle Referer-Anforderungen abrufen lassen,
+werden zum Worker uebertragen. Keine signierten URLs in GitHub-Logs ausgeben.
+"""
+import json
+import os
+import re
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+from playwright.sync_api import sync_playwright
+
+SOURCE = 'https://www.cnnturk.com/canli-yayin'
+WORKER_URL = os.environ.get('WORKER_URL', '').rstrip('/')
+TOKEN = os.environ.get('SYNC_TOKEN', '')
+TARGET_TRACK = 'track_3_754'  # Nur im Original beobachtete oder in der Master-Playlist angebotene Variante
+
+
+def is_allowed(url, now=None):
+    try:
+        u = urllib.parse.urlsplit(url)
+        if u.scheme != 'https' or u.hostname != 'live.duhnet.tv' or u.port or u.username:
+            return False
+        if not re.fullmatch(r'/{1,2}S2/HLS_LIVE/cnnturknp/(?:track_[\w-]+/)?playlist\.m3u8', u.path, re.I):
+            return False
+        params = urllib.parse.parse_qs(u.query)
+        expiry = int(params.get('e', ['0'])[0])
+        return bool(params.get('st', [''])[0]) and expiry > (now if now is not None else time.time()) + 90
+    except (ValueError, TypeError):
+        return False
+
+
+def get_manifest(url):
+    """Serverseitiger Abruf ohne Browser-Cookies/Origin/Referer."""
+    req = urllib.request.Request(url, headers={
+        'User-Agent': 'VLC/3.0.20 LibVLC/3.0.20',
+        'Accept': '*/*',
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            status = resp.status
+            if status != 200:
+                return None, status
+            data = resp.read(200_000).decode('utf-8-sig', 'replace')
+            return (data if data.lstrip().startswith('#EXTM3U') else None), status
+    except urllib.error.HTTPError as exc:
+        return None, exc.code
+    except (urllib.error.URLError, TimeoutError):
+        return None, None
+
+
+def hls_resolve(base, relative):
+    """Relative HLS-Pfade verbinden, ohne ein fuehrendes //S2/ zu normalisieren."""
+    if relative.startswith('https://'):
+        return relative
+    if relative.startswith('//'):
+        return 'https:' + relative
+    b = urllib.parse.urlsplit(base)
+    p = urllib.parse.urlsplit(relative)
+    if p.path.startswith('/'):
+        path = p.path
+    else:
+        path = b.path.rsplit('/', 1)[0] + '/' + p.path
+    return urllib.parse.urlunsplit((b.scheme, b.netloc, path, p.query, p.fragment))
+
+
+def probe_media(url):
+    """Prueft die Media-Playlist und einen Segmentabruf ohne Browser-Cookies."""
+    text, code = get_manifest(url)
+    if text is None:
+        return False, code
+    lines = [s.strip() for s in text.splitlines() if s.strip()]
+    if '#EXT-X-STREAM-INF' in text:
+        for i, line in enumerate(lines[:-1]):
+            if line.startswith('#EXT-X-STREAM-INF') and not lines[i + 1].startswith('#'):
+                variant = hls_resolve(url, lines[i + 1])
+                if not variant.startswith('https://live.duhnet.tv/'):
+                    return False, code
+                return probe_media(variant)
+        return False, code
+    if '#EXTINF:' not in text:
+        return False, code
+    # Ein 200 fuer das Manifest allein beweist noch keine Video-Wiedergabe.
+    fragments = [line for line in lines if not line.startswith('#')]
+    if not fragments:
+        return False, code
+    fragment = hls_resolve(url, fragments[0])
+    if urllib.parse.urlsplit(fragment).scheme != 'https':
+        return False, code
+    if urllib.parse.urlsplit(fragment).hostname != 'live.duhnet.tv':
+        return False, code
     req = urllib.request.Request(fragment, headers={
         'User-Agent': 'VLC/3.0.20 LibVLC/3.0.20',
         'Range': 'bytes=0-127',
@@ -125,3 +221,6 @@ def main():
         sys.exit('Die Qualitaet track_3_754 wurde nicht gefunden oder extern mit 403 abgelehnt. Kein neuer Link veroeffentlicht.')
     print('CNN Turk HLS: Adresse uebertragen (keine Fernseh-Wiedergabegarantie).')
 
+
+if __name__ == '__main__':
+    main()
