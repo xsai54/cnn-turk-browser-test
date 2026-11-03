@@ -18,7 +18,7 @@ from playwright.sync_api import sync_playwright
 SOURCE = 'https://www.cnnturk.com/canli-yayin'
 WORKER_URL = os.environ.get('WORKER_URL', '').rstrip('/')
 TOKEN = os.environ.get('SYNC_TOKEN', '')
-TARGET_TRACK = 'track_3_720'  # Nur im Original beobachtete oder in der Master-Playlist angebotene Variante
+TARGET_TRACK = 'track_4_1000'  # Nur im Original beobachtete oder in der Master-Playlist angebotene Variante
 
 
 def is_allowed(url, now=None):
